@@ -1,0 +1,26 @@
+{
+  "name": "nassimebelhadserveurtp2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NassimeBelhad123/Web-et-base-de-donn-es.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NassimeBelhad123/Web-et-base-de-donn-es/issues"
+  },
+  "homepage": "https://github.com/NassimeBelhad123/Web-et-base-de-donn-es#readme",
+  "description": "",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
