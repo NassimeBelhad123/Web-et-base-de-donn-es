@@ -33,13 +33,15 @@ const getCoursById = async (requete, reponse, next) =>{
 
 
 const creerCours = async (requete, reponse, next) => {
-    const { nom, discipline, dateDebut, dateFin } = requete.body;
+    const { nom, discipline, dateDebut, dateFin, prof, listeEtudiants } = requete.body;
   
     const nouveauCours = new Cours({
       nom,
       discipline,
       dateDebut,
       dateFin,
+      prof,
+      listeEtudiants: []
     });
   
     try {
@@ -57,7 +59,7 @@ const creerCours = async (requete, reponse, next) => {
 
 
 const updateCours = async (requete, reponse, next) => {
-    const {nom, discipline, dateDebut, dateFin} = requete.body;
+    const {nom, discipline, dateDebut, dateFin, prof, listeEtudiants} = requete.body;
     const coursId = requete.params.coursId;
 
     let cours;
@@ -68,6 +70,8 @@ const updateCours = async (requete, reponse, next) => {
         cours.discipline = discipline
         cours.dateDebut = dateDebut
         cours.dateFin = dateFin
+        cours.prof = prof
+        cours.listeEtudiants = listeEtudiants
         await cours.save()
         
     }catch{
@@ -75,7 +79,7 @@ const updateCours = async (requete, reponse, next) => {
             new HttpErreur("Erreur lors de la mise a jour du cours", 500)
         );
     }
-    reponse.statue(200).json({ cours: cours.toObject({ getters: true})
+    reponse.status(200).json({ cours: cours.toObject({ getters: true})
 });
 
         
@@ -105,7 +109,7 @@ const supprimerCours = async (requete, reponse, next) =>{
   }
 
   try {
-    await cours.remove();
+    await Cours.findByIdAndDelete(coursId);
   } catch (err) {
     return next(new HttpErreur("Erreur de suppression du cours", 500));
   }

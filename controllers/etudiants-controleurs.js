@@ -1,83 +1,116 @@
 const { reponse } = require("express");
+const { default: mongoose, mongo } = require("mongoose");
 const {v4: uuidv4} = require("uuid");
 
 
 const HttpErreur = require("../models/http-erreur");
 
-
-let ETUDIANTS = [
-    {
-        id: "m73",
-        numeroDA: "1870874",
-        nom: "Tony",
-        prenom: "Montana"
-    },
-];
+const Etudiant = require("../models/etudiants");
 
 
 
 
-const getEtudiantById = (requete, reponse, next) =>{
+
+
+const getEtudiantById = async (requete, reponse, next) =>{
     const etudiantId = requete.params.etudiantId;
-    const etudiant = ETUDIANTS.find((etudiant) =>{
-        return etudiant.id ===etudiantId;
-    });
-
+    let etudiant;
+    try {
+      etudiant = await Etudiant.findById(etudiantId);
+    } catch(err){
+        return next(
+             new HttpErreur("Erreur de la récupération de l'étudiant", 500)
+        );
+    }
     if (!etudiant){
-        return next(new HttpErreur("Aucun etudiant trouvé par l'id fourni", 404));
+        return next(new HttpErreur("Aucun étudiant trouvé par l'id fourni", 404));
     }
 
-    reponse.json({ etudiant });
+    reponse.json({ etudiant: etudiant.toObject({ getters: true}) });
 };
 
 
 
 
-const creerEtudiant = ((requete, reponse, next) =>{
+const creerEtudiant = async (requete, reponse, next) => {
+    const { numeroDA, nom, prenom, listeCours } = requete.body;
+  
+    const nouvelEtudiant = new Etudiant({
+      numeroDA,
+      nom,
+      prenom,
+      listeCours: []
+    });
+  
+    try {
+      await nouvelEtudiant.save();
+    } catch (err) {
+      return next(new HttpErreur("Erreur de création de l'étudiant", 500));
+    }
+  
+    reponse.status(201).json({ etudiant: nouvelEtudiant });
+  };
+  
 
-    const {nom, prenom} = requete.body;
-    console.log(requete.body);
-
-    const nouvelEtudiant = {
-        id: uuidv4(),
-        numeroDA,
-        nom,
-        prenom
-        }
-    ETUDIANTS.push(nouvelEtudiant);
-
-    reponse.status(201).json({etudiant: nouvelEtudiant});
-})
 
 
 
 
-
-const updateEtudiant = (requete, reponse, next) => {
-    const {nom, prenom, numeroDA} = requete.body;
+const updateEtudiant = async (requete, reponse, next) => {
+    const {numeroDA, nom, prenom, listeCours} = requete.body;
     const etudiantId = requete.params.etudiantId;
 
-        const etudiantModifiee = {...ETUDIANTS.find(etudiant => etudiant.id===etudiantId)};
-        const indiceEtudiant = ETUDIANTS.findIndex(etudiant => etudiant.id === etudiantId);
+    let etudiant;
 
-        etudiantModifiee.nom = nom;
-        etudiantModifiee.prenom = prenom;
-        etudiantModifiee.numeroDA = numeroDA;
+    try{
+        etudiant = await Etudiant.findById(etudiantId);
+        etudiant.numeroDA  = numeroDA
+        etudiant.nom = nom
+        etudiant.prenom = prenom
+        etudiant.listeCours = listeCours
+        await etudiant.save()
+        
+    }catch{
+        return next(
+            new HttpErreur("Erreur lors de la mise a jour de l'étudiant", 500)
+        );
+    }
+    reponse.status(200).json({ etudiant: etudiant.toObject({ getters: true})
+});
 
-        ETUDIANTS[indiceEtudiant] = etudiantModifiee;
+        
 
-        reponse.status(200).json({etudiant:etudiantModifiee})
+        
+
+       
 };
 
 
 
 
 
-const supprimerEtudiant = (requete, reponse, next) =>{
+const supprimerEtudiant = async (requete, reponse, next) =>{
 
-    const etudiantId = requete.params.etudiantId;
-    ETUDIANTS = ETUDIANTS.filter(etudiant =>etudiant.id !== etudiantId );
-    reponse.status(200).json({message: "Etudiant supprimé"});
+  const etudiantId = requete.params.etudiantId;
+
+  let etudiant;
+  try {
+    etudiant = await Etudiant.findById(etudiantId);
+  } catch (err) {
+    return next(new HttpErreur("Erreur de la récupération de l'étudiant", 500));
+  }
+
+  if (!etudiant) {
+    return next(new HttpErreur("Aucun étudiant trouvé par l'id fourni", 404));
+  }
+
+  try {
+    await Etudiant.findByIdAndDelete(etudiantId);
+  } catch (err) {
+    return next(new HttpErreur("Erreur de suppression de l'étudiant", 500));
+  }
+
+  reponse.status(200).json({ message: "Étudiant supprimé" });
 
     
 };
