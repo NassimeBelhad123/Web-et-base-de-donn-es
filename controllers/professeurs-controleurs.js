@@ -1,87 +1,119 @@
 const { reponse } = require("express");
+const { default: mongoose, mongo } = require("mongoose");
 const {v4: uuidv4} = require("uuid");
 
 
 const HttpErreur = require("../models/http-erreur");
 
-
-let PROFESSEURS = [
-    {
-        id: "u001",
-        nom: "Veregus",
-        prenom: "Fergus",
-        cours: ["botanique", "vol de balais", "potions"],
-    },
-];
+const Prof = require("../models/professeurs")
 
 
 
 
-const getProfesseurById = (requete, reponse, next) =>{
-    const ProfId = requete.params.ProfId;
-    const prof = PROFESSEURS.find((prof) =>{
-        return prof.id ===ProfId;
-    });
 
+
+const getProfById = async (requete, reponse, next) =>{
+    const profId = requete.params.profId;
+    let prof;
+    try {
+      prof = await Prof.findById(profId);
+    } catch(err){
+        return next(
+             new HttpErreur("Erreur de la récupération du professeur", 500)
+        );
+    }
     if (!prof){
         return next(new HttpErreur("Aucun prof trouvé par l'id fourni", 404));
     }
 
-    reponse.json({ prof });
+    reponse.json({ prof: prof.toObject({ getters: true}) });
 };
 
 
 
 
-const creerProfesseur = ((requete, reponse, next) =>{
-
-    const {nom, prenom, cours} = requete.body;
-    console.log(requete.body);
-
-    const nouveauProf = {
-        id: uuidv4(),
-        nom,
-        prenom,
-        cours : []
+const creerProf = async (requete, reponse, next) => {
+    const { nom, prenom, listeCours } = requete.body;
+  
+    const nouveauProf = new Prof({
+      nom,
+      prenom,
+      listeCours: []
+    });
+  
+    try {
+      await nouveauProf.save();
+    } catch (err) {
+      return next(new HttpErreur("Erreur de création du professeur", 500));
     }
-    PROFESSEURS.push(nouveauProf);
-
-    reponse.status(201).json({prof: nouveauProf});
-})
-
-
+  
+    reponse.status(201).json({ prof: nouveauProf });
+  };
+  
 
 
 
-const updateProfesseur = (requete, reponse, next) => {
-    const {nom, prenom} = requete.body;
-    const ProfId = requete.params.ProfId;
 
-        const profModifiee = {...PROFESSEURS.find(prof => prof.id===ProfId)};
-        const indiceProf = PROFESSEURS.findIndex(prof => prof.id === ProfId);
 
-        profModifiee.nom = nom;
-        profModifiee.prenom = prenom;
+const updateProf = async (requete, reponse, next) => {
+    const {nom,  prenom, listeCours} = requete.body;
+    const profId = requete.params.profId;
 
-        PROFESSEURS[indiceProf] = profModifiee;
+    let prof;
 
-        reponse.status(200).json({prof:profModifiee})
+    try{
+        prof = await Prof.findById(profId);
+        prof.nom  = nom
+        prof.prenom = prenom
+        prof.listeCours = listeCours
+        await prof.save()
+        
+    }catch{
+        return next(
+            new HttpErreur("Erreur lors de la mise a jour du professeur", 500)
+        );
+    }
+    reponse.status(200).json({ prof: prof.toObject({ getters: true})
+});
+
+        
+
+        
+
+       
 };
 
 
 
 
 
-const supprimerProfesseur = (requete, reponse, next) =>{
+const supprimerProf = async (requete, reponse, next) =>{
 
-    const ProfId = requete.params.ProfId;
-    PROFESSEURS = PROFESSEURS.filter(prof =>prof.id !== ProfId );
-    reponse.status(200).json({message: "Professeur supprimé"});
+  const profId = requete.params.profId;
+
+  let prof;
+  try {
+    prof = await Prof.findById(profId);
+  } catch (err) {
+    return next(new HttpErreur("Erreur de la récupération du prof", 500));
+  }
+
+  if (!prof) {
+    return next(new HttpErreur("Aucun cours trouvé par l'id fourni", 404));
+  }
+
+  try {
+    await Prof.findByIdAndDelete(profId);
+  } catch (err) {
+    return next(new HttpErreur("Erreur de suppression du professeur", 500));
+  }
+
+  reponse.status(200).json({ message: "Professeur supprimé" });
 
     
 };
 
-exports.getProfesseurById = getProfesseurById;
-exports.creerProfesseur = creerProfesseur;
-exports.updateProfesseur = updateProfesseur;
-exports.supprimerProfesseur = supprimerProfesseur;
+exports.getProfById = getProfById;
+exports.creerProf = creerProf;
+exports.updateProf = updateProf;
+exports.supprimerProf = supprimerProf;
