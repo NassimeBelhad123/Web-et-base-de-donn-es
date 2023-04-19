@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 const Schema = mongoose.Schema
 
-const placeSchema = new Schema({
+const coursSchema = new Schema({
     
     nom:{type: String, required: true},
     discipline:{type: String, required: true},
@@ -13,4 +13,4 @@ const placeSchema = new Schema({
     
 );
 
-modulee.exports = mongoose.model("Professeur", placeSchema)
+module.exports = mongoose.model("Cours", coursSchema)

@@ -11,4 +11,4 @@ const placeSchema = new Schema({
     
 );
 
-modulee.exports = mongoose.model("Professeur", placeSchema)
+modulee.exports = mongoose.model("Etudiant", placeSchema)

@@ -1,86 +1,116 @@
 const { reponse } = require("express");
+const { default: mongoose, mongo } = require("mongoose");
 const {v4: uuidv4} = require("uuid");
 
 
 const HttpErreur = require("../models/http-erreur");
 
-
-let COURS = [
-    {
-        id: "t91",
-        nom: "Sorts d'auto-défense",
-        discipline:"Magie",
-        dateDebut: "2023-01-16",
-        dateFin: "2023-05-17"
-    },
-];
+const Cours = require("../models/cours")
 
 
 
 
-const getCoursById = (requete, reponse, next) =>{
+
+
+const getCoursById = async (requete, reponse, next) =>{
     const coursId = requete.params.coursId;
-    const cours = COURS.find((cours) =>{
-        return cours.id ===coursId;
-    });
-
+    let cours;
+    try {
+      cours = await Cours.findById(coursId);
+    } catch(err){
+        return next(
+             new HttpErreur("Erreur de la récupération du cours", 500)
+        );
+    }
     if (!cours){
         return next(new HttpErreur("Aucun cours trouvé par l'id fourni", 404));
     }
 
-    reponse.json({ cours });
+    reponse.json({ cours: cours.toObject({ getters: true}) });
 };
 
 
 
 
-const creerCours = ((requete, reponse, next) =>{
+const creerCours = async (requete, reponse, next) => {
+    const { nom, discipline, dateDebut, dateFin } = requete.body;
+  
+    const nouveauCours = new Cours({
+      nom,
+      discipline,
+      dateDebut,
+      dateFin,
+    });
+  
+    try {
+      await nouveauCours.save();
+    } catch (err) {
+      return next(new HttpErreur("Erreur de création du cours", 500));
+    }
+  
+    reponse.status(201).json({ cours: nouveauCours });
+  };
+  
 
+
+
+
+
+const updateCours = async (requete, reponse, next) => {
     const {nom, discipline, dateDebut, dateFin} = requete.body;
-    console.log(requete.body);
-
-    const nouveauCours = {
-        id: uuidv4(),
-        nom,
-        discipline,
-        dateDebut, 
-        dateFin
-        }
-    COURS.push(nouveauCours);
-
-    reponse.status(201).json({cours: nouveauCours});
-})
-
-
-
-
-
-const updateCours = (requete, reponse, next) => {
-    const {nom, discipline} = requete.body;
     const coursId = requete.params.coursId;
 
-        const coursModifiee = {...COURS.find(cours => cours.id===coursId)};
-        const indiceCours = COURS.findIndex(cours => cours.id === coursId);
+    let cours;
 
-        coursModifiee.nom = nom;
-        coursModifiee.discipline = discipline;
-        coursModifiee.dateDebut = dateDebut;
-        coursModifiee.dateFin = dateFin
+    try{
+        cours = await Cours.findById(coursId);
+        cours.nom  = nom
+        cours.discipline = discipline
+        cours.dateDebut = dateDebut
+        cours.dateFin = dateFin
+        await cours.save()
+        
+    }catch{
+        return next(
+            new HttpErreur("Erreur lors de la mise a jour du cours", 500)
+        );
+    }
+    reponse.statue(200).json({ cours: cours.toObject({ getters: true})
+});
 
-        COURS[indiceCours] = coursModifiee;
+        
 
-        reponse.status(200).json({cours:coursModifiee})
+        
+
+       
 };
 
 
 
 
 
-const supprimerCours = (requete, reponse, next) =>{
+const supprimerCours = async (requete, reponse, next) =>{
 
-    const coursId = requete.params.coursId;
-    COURS = COURS.filter(cours =>cours.id !== coursId );
-    reponse.status(200).json({message: "Cours supprimé"});
+  const coursId = requete.params.coursId;
+
+  let cours;
+  try {
+    cours = await Cours.findById(coursId);
+  } catch (err) {
+    return next(new HttpErreur("Erreur de la récupération du cours", 500));
+  }
+
+  if (!cours) {
+    return next(new HttpErreur("Aucun cours trouvé par l'id fourni", 404));
+  }
+
+  try {
+    await cours.remove();
+  } catch (err) {
+    return next(new HttpErreur("Erreur de suppression du cours", 500));
+  }
+
+  reponse.status(200).json({ message: "Cours supprimé" });
 
     
 };
