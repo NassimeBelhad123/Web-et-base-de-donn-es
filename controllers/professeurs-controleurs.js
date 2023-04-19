@@ -95,7 +95,7 @@ const supprimerProf = async (requete, reponse, next) =>{
   try {
     prof = await Prof.findById(profId);
   } catch (err) {
-    return next(new HttpErreur("Erreur de la récupération du prof", 500));
+    return next(new HttpErreur("Erreur de la récupération du professeur", 500));
   }
 
   if (!prof) {
